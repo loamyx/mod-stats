@@ -2,7 +2,6 @@
 
 A Devvit app that tracks and surfaces **moderation insights** for subreddit moderators — action counts, top moderators, frequently-targeted users, and daily trends — all from the mod log.
 
-Built for hackathons. Extends the proven patterns of [sub-stats-bot](https://github.com/fsvreddit/sub-stats-bot).
 
 ## What It Tracks
 
