@@ -1,12 +1,12 @@
 import { TriggerContext } from '@devvit/public-api';
 import { JOBS, CRON } from './constants.js';
 
-export async function handleInstall(event: unknown, context: TriggerContext): Promise<void> {
+export async function handleInstall(_event: unknown, context: TriggerContext): Promise<void> {
   await scheduleJobs(context);
   console.log('[mod-stats] App installed — scheduled daily + year-end jobs.');
 }
 
-export async function handleUpgrade(event: unknown, context: TriggerContext): Promise<void> {
+export async function handleUpgrade(_event: unknown, context: TriggerContext): Promise<void> {
   await scheduleJobs(context);
   console.log('[mod-stats] App upgraded — rescheduled jobs.');
 }
