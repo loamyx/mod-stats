@@ -1,15 +1,14 @@
-import { TriggerContext } from '@devvit/public-api';
-
 export function formatUsername(name: string): string {
-  if (!name) return '—';
-  return `u/${name}`;
+  if (!name) return '\u2014';
+  return name.trim();
 }
 
 export function actionLabel(action: string): string {
-  return action.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
+  if (!action) return '';
+  return action.charAt(0).toUpperCase() + action.slice(1).toLowerCase();
 }
 
-export async function userIsMod(context: TriggerContext, username: string): Promise<boolean> {
+export async function userIsMod(context: any, username: string): Promise<boolean> {
   try {
     const subreddit = await context.reddit.getCurrentSubreddit();
     const mods = await subreddit.getModerators({ limit: 500 });
