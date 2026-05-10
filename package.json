@@ -1,7 +1,7 @@
 {
   "name": "mod-stats",
-  "version": "0.1.0",
-  "description": "Devvit app — tracks moderator actions and publishes monthly wiki reports",
+  "version": "0.2.0",
+  "description": "Devvit app \u2014 tracks moderator actions and publishes monthly wiki reports",
   "type": "module",
   "private": true,
   "scripts": {
@@ -9,12 +9,12 @@
     "dev": "npx devvit playtest",
     "upload": "npx devvit upload"
   },
+  "dependencies": {
+    "date-fns": "^4.1.0"
+  },
   "devDependencies": {
     "@devvit/public-api": "^0.11.0",
     "@devvit/protos": "^0.11.0",
-    "typescript": "^5.4.0"
-  },
-  "engines": {
-    "node": ">=18"
+    "typescript": "^5.5.0"
   }
 }

@@ -1,31 +1,31 @@
-import { TriggerContext } from '@devvit/public-api';
-import { JOBS, CRON } from './constants.js';
+import { TriggerContext } from "@devvit/public-api";
+import { JOBS, CRON } from "./constants.js";
 
-export async function handleInstall(_event: unknown, context: TriggerContext): Promise<void> {
-  await scheduleJobs(context);
-  console.log('[mod-stats] App installed — scheduled daily + year-end jobs.');
+export async function handleInstall(
+  _event: any,
+  context: TriggerContext
+): Promise<void> {
+  await scheduleWikiJob(context);
+  console.log("[mod-stats] App installed \u2014 wiki update job scheduled.");
 }
 
-export async function handleUpgrade(_event: unknown, context: TriggerContext): Promise<void> {
-  await scheduleJobs(context);
-  console.log('[mod-stats] App upgraded — rescheduled jobs.');
-}
-
-async function scheduleJobs(context: TriggerContext): Promise<void> {
-  const existingJobs = await context.scheduler.listJobs();
-  for (const job of existingJobs) {
-    if (job.name === JOBS.DAILY_WIKI_UPDATE || job.name === JOBS.YEAR_END_ROLLUP) {
+export async function handleUpgrade(
+  _event: any,
+  context: TriggerContext
+): Promise<void> {
+  const jobs = await context.scheduler.listJobs();
+  for (const job of jobs) {
+    if (job.name === JOBS.WIKI_UPDATE) {
       await context.scheduler.cancelJob(job.id);
     }
   }
+  await scheduleWikiJob(context);
+  console.log("[mod-stats] App upgraded \u2014 wiki update job rescheduled.");
+}
 
+async function scheduleWikiJob(context: TriggerContext): Promise<void> {
   await context.scheduler.runJob({
-    name: JOBS.DAILY_WIKI_UPDATE,
-    cron: CRON.DAILY,
-  });
-
-  await context.scheduler.runJob({
-    name: JOBS.YEAR_END_ROLLUP,
-    cron: CRON.YEAR_END,
+    name: JOBS.WIKI_UPDATE,
+    cron: CRON.WIKI_UPDATE,
   });
 }

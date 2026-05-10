@@ -1,29 +1,76 @@
-import { TriggerContext } from '@devvit/public-api';
+import { ModAction, TriggerContext } from "@devvit/public-api";
+import { TRACKED_ACTIONS } from "./constants.js";
+import {
+  keyLeaderboard,
+  keyActionCounts,
+  keyDailyCounts,
+  keyTargetCounts,
+  keyRecentActions,
+  keyDedup,
+  incrementMember,
+} from "./redisHelper.js";
+import { addMinutes } from "date-fns";
 
-const REDIS_PREFIX = 'modstats:';
+export async function handleModAction(
+  event: ModAction,
+  context: TriggerContext
+): Promise<void> {
+  if (!event.action) return;
 
-export async function handleModAction(event: any, context: TriggerContext): Promise<void> {
-  const moderator = event.moderator?.name;
-  const action = event.action;
+  const actionType = event.action.toLowerCase();
+  if (!TRACKED_ACTIONS.includes(actionType as any)) return;
 
-  if (!moderator || !action) {
-    return;
-  }
+  const actionId = event.actionId;
+  if (!actionId) return;
 
-  const redis = context.redis;
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const { redis } = context;
 
-  // Increment global leaderboard
-  await redis.zIncrBy(`${REDIS_PREFIX}leaderboard`, moderator, 1);
+  const dedupKey = keyDedup(actionId);
+  const seen = await redis.get(dedupKey);
+  if (seen) return;
+  await redis.set(dedupKey, "1", { expiration: addMinutes(new Date(), 10080) });
 
-  // Increment daily count for this moderator
-  await redis.zIncrBy(`${REDIS_PREFIX}daily:${today}`, moderator, 1);
+  const now = event.actionedAt ? new Date(event.actionedAt) : new Date();
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth() + 1;
+  const day = String(now.getUTCDate()).padStart(2, "0");
 
-  // Track action type breakdown
-  await redis.zIncrBy(`${REDIS_PREFIX}actions:${moderator}`, action, 1);
+  const moderator = event.moderator?.name ?? "unknown";
+  const target = event.targetUser?.name ?? "";
 
-  // Increment total action counter
-  await redis.incrBy(`${REDIS_PREFIX}total`, 1);
+  await Promise.all([
+    incrementMember(redis, keyLeaderboard(year, month), moderator),
+    incrementMember(redis, keyActionCounts(year, month), actionType),
+    incrementMember(redis, keyDailyCounts(year, month), day),
+    target
+      ? incrementMember(redis, keyTargetCounts(year, month), target)
+      : Promise.resolve(),
+    pushRecentAction(redis, keyRecentActions(year, month), {
+      action: actionType,
+      moderator,
+      target,
+      timestamp: now.toISOString(),
+      contentId: event.targetPost?.id ?? event.targetComment?.id ?? "",
+    }),
+  ]);
+}
 
-  console.log(`[mod-stats] Recorded: ${moderator} -> ${action}`);
+interface RecentEntry {
+  action: string;
+  moderator: string;
+  target: string;
+  timestamp: string;
+  contentId: string;
+}
+
+async function pushRecentAction(
+  redis: any,
+  key: string,
+  entry: RecentEntry
+): Promise<void> {
+  const raw = await redis.get(key);
+  const list: RecentEntry[] = raw ? JSON.parse(raw) : [];
+  list.unshift(entry);
+  if (list.length > 200) list.length = 200;
+  await redis.set(key, JSON.stringify(list));
 }

@@ -1,39 +1,33 @@
-import { Devvit, TriggerContext } from '@devvit/public-api';
-import { handleModAction } from './modActionHandling.js';
-import { updateWikiPage } from './modStatsWiki.js';
+import { Devvit } from "@devvit/public-api";
+import { JOBS } from "./constants.js";
+import { appSettings } from "./settings.js";
+import { handleModAction } from "./modActionHandling.js";
+import { generateModStatsWiki } from "./modStatsWiki.js";
+import { handleInstall, handleUpgrade } from "./installEvents.js";
 
 Devvit.configure({ redditAPI: true, redis: true });
 
+Devvit.addSettings(appSettings);
+
 Devvit.addTrigger({
-  event: 'ModAction',
-  onEvent: async (event, context: TriggerContext) => {
-    try {
-      await handleModAction(event, context);
-    } catch (err) {
-      console.error('[mod-stats] Error handling mod action:', err);
-    }
-  },
+  event: "ModAction",
+  onEvent: handleModAction,
+});
+
+Devvit.addTrigger({
+  event: "AppInstall",
+  onEvent: handleInstall,
+});
+
+Devvit.addTrigger({
+  event: "AppUpgrade",
+  onEvent: handleUpgrade,
 });
 
 Devvit.addSchedulerJob({
-  name: 'updateWiki',
-  onRun: async (_event, context: TriggerContext) => {
-    try {
-      await updateWikiPage(context);
-    } catch (err) {
-      console.error('[mod-stats] Error updating wiki:', err);
-    }
-  },
-});
-
-Devvit.addTrigger({
-  event: 'AppInstall',
-  onEvent: async (_event, context: TriggerContext) => {
-    await context.scheduler.runJob({
-      name: 'updateWiki',
-      cron: '0 */6 * * *',
-    });
-    console.log('[mod-stats] Scheduled wiki update every 6 hours.');
+  name: JOBS.WIKI_UPDATE,
+  onRun: async (_event, context) => {
+    await generateModStatsWiki(context);
   },
 });
 

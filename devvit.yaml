@@ -1,4 +1,2 @@
 name: mod-stats
-version: 0.1.0
-runtime: node
-description: Tracks moderator actions and publishes monthly wiki reports
+version: 0.2.0
