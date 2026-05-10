@@ -1,31 +1,33 @@
-import { Devvit } from "@devvit/public-api";
-import { JOBS } from "./constants.js";
-import { appSettings } from "./settings.js";
-import { handleModAction } from "./modActionHandling.js";
-import { generateModStatsWiki } from "./modStatsWiki.js";
-import { handleInstall, handleUpgrade } from "./installEvents.js";
+import { Devvit } from '@devvit/public-api';
+import { JOBS } from './constants.js';
+import { appSettings } from './settings.js';
+import { handleModAction } from './modActionHandling.js';
+import { generateModStatsWiki } from './modStatsWiki.js';
+import { handleInstall, handleUpgrade } from './installEvents.js';
 
 Devvit.configure({ redditAPI: true, redis: true });
 
 Devvit.addSettings(appSettings);
 
 Devvit.addTrigger({
-  event: "ModAction",
-  onEvent: handleModAction,
+  event: 'ModAction',
+  onEvent: async (event, context) => {
+    await handleModAction(event, context);
+  },
 });
 
 Devvit.addTrigger({
-  event: "AppInstall",
+  event: 'AppInstall',
   onEvent: handleInstall,
 });
 
 Devvit.addTrigger({
-  event: "AppUpgrade",
+  event: 'AppUpgrade',
   onEvent: handleUpgrade,
 });
 
 Devvit.addSchedulerJob({
-  name: JOBS.WIKI_UPDATE,
+  name: JOBS.DAILY_WIKI_UPDATE,
   onRun: async (_event, context) => {
     await generateModStatsWiki(context);
   },
